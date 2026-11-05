@@ -194,6 +194,9 @@ function Bubble({ msg, chat, from, out, last, pics, images, writing }: { msg: Me
                     const blocker = chat.messages.findLast((m) => m.question?.sent === undefined && !!m.question && !m.waiting)
                     return blocker ? <LinkButton onClick={() => jumpTo(chat.key, blocker.id, { card: true })}>Go to question</LinkButton> : null
                   })()}
+                </> : msg.waitsFor === 'queue' ? <>
+                  {WORDS.inQueue}{' '}
+                  <LinkButton onClick={() => void act({ type: 'steer', chat: chat.key } as never).catch(() => undefined)}>{WORDS.sendNow}</LinkButton>
                 </> : waitLine(msg.waitsFor)}</div> : null}
                 {msg.text ? <div ref={text} data-text>{you ? <YourText text={msg.text} chat={chat.key} /> : <Fold id={msg.id}><Markdown text={msg.text} chat={chat.key} /></Fold>}</div> : null}
               </div>,

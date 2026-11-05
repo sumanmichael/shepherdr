@@ -5,7 +5,7 @@ import type { Hub } from "./hub.ts";
 import { join } from "node:path";
 import { appendFileSync, existsSync, mkdirSync, writeFileSync } from "node:fs";
 import { homedir } from "node:os";
-import { sendBody, messageBody, refusal, reactionLine, mentionedIn, taskTag } from "../core/send.js";
+import { sendBody, messageBody, refusal, reactionLine, mentionedIn, taskTag, steerNow } from "../core/send.js";
 import { kindOf } from "../core/chat-reader.js";
 import * as AGa from "../core/agents.js";
 const { sessionOf, forkArgv } = AGa as any;
@@ -453,6 +453,13 @@ export async function act(hub: Hub, b: any, compat: Compat): Promise<unknown> {
     const space = ["herdr.space", "herdr.task.space", "herdr.coordinator.space"].map((k) => t?.labels?.[k]).find(Boolean);
     const res = await run(["herdr-app", "do", "tab.new", ...(space ? ["--space", space] : []), "--folder", t?.foreground?.cwd ?? t?.cwd ?? "", "--argv", JSON.stringify(forkArgv(kind, t?.foreground?.argv ?? t?.argv ?? [], session))]);
     if (res.code !== 0) throw new Error("A fork opens as a tab in the Herdr window: it needs the window open.");
+    return { ok: true };
+  }
+  if (b?.type === "steer" && typeof b.chat === "string") {
+    // Send now on a message Claude Code still holds in its queue (the send's own steer missed it): its Ctrl+Enter,
+    // only while its screen offers it
+    const a = chat(b.chat);
+    await steerNow({ hc: asPerson(hub), sleep: (ms: number) => Bun.sleep(ms), status: () => (hub.terminals.get(a) as any)?.status?.state ?? null }, a);
     return { ok: true };
   }
   if (b?.type === "keys" && typeof b.chat === "string" && Array.isArray(b.keys) && b.keys.length <= 32 && b.keys.every((k: unknown) => typeof k === "string" && k.length <= 40)) {
